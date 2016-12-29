@@ -655,6 +655,8 @@
 # undef  BOARD_POWER_PIN_RELEASE		/* Leave pin enabling Power - un comment to release (disable power)*/
 # define USBMFGSTRING                   "The Autopilot"
 # define  SERIAL_BREAK_DETECT_DISABLED   1
+# define USE_VBUS_PULL_DOWN
+# define HAS_DIRECT_POWER_CTRL
 
 /****************************************************************************
  * TARGET_HW_CRAZYFLIE

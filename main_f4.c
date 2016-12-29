@@ -351,6 +351,9 @@ board_init(void)
 
 	/* enable Port A GPIO9 to sample VBUS */
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
+#  if defined(USE_VBUS_PULL_DOWN)
+	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN, GPIO9);
+#  endif
 #endif
 
 #if INTERFACE_USART
@@ -692,7 +695,7 @@ main(void)
 	/* Enable the FPU before we hit any FP instructions */
 	SCB_CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10 Full Access and set CP11 Full Access */
 
-#if defined(BOARD_POWER_PIN_OUT)
+#if defined(BOARD_POWER_PIN_OUT) && !defined(HAS_DIRECT_POWER_CTRL)
 
 	/* Here we check for the app setting the POWER_DOWN_RTC_SIGNATURE
 	 * in this case, we reset the signature and wait to die
@@ -781,11 +784,13 @@ main(void)
 #if defined(BOARD_USB_VBUS_SENSE_DISABLED)
 	try_boot = false;
 #else
+
 	if (gpio_get(GPIOA, GPIO9) != 0) {
 
 		/* don't try booting before we set up the bootloader */
 		try_boot = false;
 	}
+
 #endif
 #endif
 
