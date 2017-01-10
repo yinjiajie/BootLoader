@@ -572,8 +572,8 @@
 # define BOARD_TYPE                     10
 # define BOARD_FLASH_SECTORS            11
 # define BOARD_FLASH_SIZE               (1024 * 1024)
-# define BOARD_FIRST_FLASH_SECTOR_TO_ERASE  2
-# define APP_RESERVATION_SIZE			(2 * 16 * 1024) /* 2 16 Kib Sectors */
+# define BOARD_FIRST_FLASH_SECTOR_TO_ERASE  3
+# define APP_RESERVATION_SIZE			(3 * 16 * 1024) /* 3 16 Kib Sectors */
 # define OSC_FREQ                       16
 
 # define BOARD_USART  					USART2
