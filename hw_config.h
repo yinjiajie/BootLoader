@@ -30,8 +30,7 @@
  * USBPRODUCTID         0x0011                - PID Should match defconfig
  * BOOT_DELAY_ADDRESS   0x000001a0            - (Optional) From the linker script from Linker Script to get a custom
  *                                               delay provided by an APP FW
-
-*  BOARD_TYPE           9                     - Must match .prototype boad_id
+ *  BOARD_TYPE           9                     - Must match .prototype boad_id in Firmware/Images
  * _FLASH_KBYTES        (*(uint16_t *)0x1fff7a22) - Run time flash size detection
  * BOARD_FLASH_SECTORS  ((_FLASH_KBYTES == 0x400) ? 11 : 23) - Run time determine the physical last sector
  * BOARD_FLASH_SECTORS   11                   - Hard coded zero based last sector
@@ -620,7 +619,6 @@
 # define USBPRODUCTID                   0x0042
 # define BOOT_DELAY_ADDRESS             0x000001a0
 
-/* This BOARD_TYPE is base in /Firmware/Images/tap-v1.prototype  */
 # define BOARD_TYPE                     66
 # define BOARD_FLASH_SECTORS            11
 # define BOARD_FLASH_SIZE               (1024 * 1024)
@@ -654,7 +652,7 @@
 # define BOARD_POWER_OFF                gpio_clear
 # undef  BOARD_POWER_PIN_RELEASE		/* Leave pin enabling Power - un comment to release (disable power)*/
 # define USBMFGSTRING                   "The Autopilot"
-# define  SERIAL_BREAK_DETECT_DISABLED   1
+# define SERIAL_BREAK_DETECT_DISABLED   1
 # define USE_VBUS_PULL_DOWN
 # define HAS_DIRECT_POWER_CTRL
 
