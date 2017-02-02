@@ -615,6 +615,7 @@
 # define BOARD_TAP
 # define INTERFACE_USB                  1
 # define INTERFACE_USART                1
+# define OVERRIDE_USART_BAUDRATE        500000
 # define USBDEVICESTRING                "PX4 BL TAP v2.x"
 # define USBPRODUCTID                   0x0042
 # define BOOT_DELAY_ADDRESS             0x000001a0
