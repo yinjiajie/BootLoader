@@ -7,6 +7,7 @@
 #
 export BL_BASE		?= $(wildcard .)
 export LIBOPENCM3	?= $(wildcard libopencm3)
+export LIBAES		?= $(wildcard libaes)
 
 #
 # Tools
@@ -24,6 +25,7 @@ export FLAGS		 = -std=gnu99 \
 			   -Wall \
 			   -fno-builtin \
 			   -I$(LIBOPENCM3)/include \
+			   -I$(LIBAES) \
 			   -ffunction-sections \
 			   -nostartfiles \
 			   -lnosys \
@@ -31,7 +33,7 @@ export FLAGS		 = -std=gnu99 \
 			   -Wl,-g \
 			   -Werror
 
-export COMMON_SRCS	 = bl.c cdcacm.c  usart.c
+export COMMON_SRCS	 = bl.c cdcacm.c  usart.c $(LIBAES)/aes.c
 
 #
 # Bootloaders to build
