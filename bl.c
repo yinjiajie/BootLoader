@@ -996,6 +996,12 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
+			if (num_to_flash > board_info.fw_size) {
+				// If something with the encryption went wrong, chances are high
+				// that this number is bigger than the flash space and we can give up.
+				goto cmd_fail;
+			}
+
 			// We need chunks of 16 bytes to decrypt
 			if (arg % 16 == 0 && arg < PROTO_PROG_MULTI_MAX) {
 				// We loop in chunks of 16 even though the AES function provides a
@@ -1066,6 +1072,13 @@ bootloader(unsigned timeout)
 			// expect EOC
 			if (!wait_for_eoc(2)) {
 				goto cmd_bad;
+			}
+
+			if (num_to_flash > board_info.fw_size) {
+				// If something with the encryption went wrong and we have
+				// a wrong num_to_flash, chances are that we would run out of
+				// the flash space and segfault. Therefore, let's bail here.
+				goto cmd_fail;
 			}
 
 			// compute CRC of the programmed area
