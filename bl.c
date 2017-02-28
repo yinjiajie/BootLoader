@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2012-2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2017 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,6 +49,10 @@
 
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/cm3/systick.h>
+
+#ifdef ENABLE_ENCRYPTION
+#include <aes.h>
+#endif
 
 #include "bl.h"
 #include "cdcacm.h"
@@ -107,12 +111,25 @@
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
+#ifdef ENABLE_ENCRYPTION
+#define PROTO_SET_IV				0x36	// send initialization vector
+#define PROTO_PROG_MULTI_ENCRYPTED	0x37	// like PROG_MULTI but encrypted with AES-128
+#define PROTO_CHECK_CRC				0x38	// Check the CRC which is included in the last 4 bytes
+#endif
+
+
 /* argument values for PROTO_GET_DEVICE */
 #define PROTO_DEVICE_BL_REV	1	// bootloader revision
 #define PROTO_DEVICE_BOARD_ID	2	// board ID
 #define PROTO_DEVICE_BOARD_REV	3	// board revision
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
+
+typedef union {
+    uint8_t		c[256];
+    uint32_t	w[64];
+} flash_buffer_t;
+
 
 static uint8_t bl_type;
 static uint8_t last_input;
@@ -483,6 +500,14 @@ bootloader(unsigned timeout)
 	uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
 	uint32_t	first_word = 0xffffffff;
 
+#ifdef ENABLE_ENCRYPTION
+	uint32_t num_to_flash = 0;
+	uint32_t crc32_sum = 0;
+	const uint8_t key[16] = {0xc9, 0x9e, 0x53, 0xed, 0xad, 0x9b, 0xe7, 0x75, 0x1b, 0x44, 0x75, 0xd8, 0xcb, 0x0a, 0x8a, 0x2f};
+	static flash_buffer_t encrypted_buffer;
+	static uint8_t iv[16] = {0};
+#endif
+
 	/* (re)start the timer system */
 	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB);
 	systick_set_reload(board_info.systick_mhz * 1000);	/* 1ms tick, magic number */
@@ -500,10 +525,7 @@ bootloader(unsigned timeout)
 	while (true) {
 		volatile int c;
 		int arg;
-		static union {
-			uint8_t		c[256];
-			uint32_t	w[64];
-		} flash_buffer;
+		static flash_buffer_t flash_buffer;
 
 		// Wait for a command byte
 		led_off(LED_ACTIVITY);
@@ -684,9 +706,9 @@ bootloader(unsigned timeout)
 
 #if defined(TARGET_HW_PX4_FMU_V4)
 
-			if (check_silicon()) {
-				goto bad_silicon;
-			}
+				if (check_silicon()) {
+					goto bad_silicon;
+				}
 
 #endif
 
@@ -899,6 +921,174 @@ bootloader(unsigned timeout)
 		case PROTO_DEBUG:
 			// XXX reserved for ad-hoc debugging as required
 			break;
+
+#ifdef ENABLE_ENCRYPTION
+		// For encrypted programming, we need the initialization vector
+		// to decrypt AES-128 CBC.
+		//
+		// command:			SET_IV/<data,16>/EOC
+		// reply:			INSYNC/OK
+		// invalid reply:	INSYNC/INVALID
+		//
+		case PROTO_SET_IV:
+			// expect 16 bytes
+			for (int i = 0; i < 16; i++) {
+				c = cin_wait(1000);
+
+				if (c < 0) {
+					goto cmd_bad;
+				}
+
+				iv[i] = c;
+			}
+
+			if (!wait_for_eoc(200)) {
+				goto cmd_bad;
+			}
+
+			break;
+
+		// Encrypted programming using AES-128 CBC.
+		// The first 4 words are header data and not flash data.
+		//
+		// Header:
+		// uint32_t: Number of bytes to flash and to make CRC32 over.
+		// uint32_t: CRC32
+		// uint32_t: Reserved 1
+		// uint32_t: Reserved 2
+		//
+		// command:			SET_IV/<data,16>/EOC
+		// reply:			INSYNC/OK
+		// invalid reply:	INSYNC/INVALID
+		//
+		case PROTO_PROG_MULTI_ENCRYPTED:
+			// expect count
+			arg = cin_wait(50);
+
+			if (arg < 0) {
+				goto cmd_bad;
+			}
+
+			// sanity-check arguments
+			if (arg % 4) {
+				goto cmd_bad;
+			}
+
+			if ((address + arg) > board_info.fw_size) {
+				goto cmd_bad;
+			}
+
+			if (arg > sizeof(flash_buffer.c)) {
+				goto cmd_bad;
+			}
+
+			for (int i = 0; i < arg; i++) {
+				c = cin_wait(1000);
+
+				if (c < 0) {
+					goto cmd_bad;
+				}
+
+				encrypted_buffer.c[i] = c;
+			}
+
+			if (!wait_for_eoc(200)) {
+				goto cmd_bad;
+			}
+
+			// We need chunks of 16 bytes to decrypt
+			if (arg % 16 == 0 && arg < PROTO_PROG_MULTI_MAX) {
+				// We loop in chunks of 16 even though the AES function provides a
+				// length argument, however, we didn't have success using it.
+				for (int i = 0; i < arg; i += 16) {
+					AES128_CBC_decrypt_buffer(&flash_buffer.c[i], &encrypted_buffer.c[i], 16, key, iv);
+					for (int j = 0; j < 16; ++j) {
+						// Also, it seems like we need to take care of iv on every iteration.
+						iv[j] = encrypted_buffer.c[i+j];
+					}
+				}
+
+			} else {
+				goto cmd_bad;
+			}
+
+			int start = 0;
+			if (address == 0) {
+
+#if defined(TARGET_HW_PX4_FMU_V4)
+
+				if (check_silicon()) {
+					goto bad_silicon;
+				}
+
+#endif
+				// The first 4 bytes are header bytes and not actual flash content.
+				num_to_flash = flash_buffer.w[0];
+				crc32_sum = flash_buffer.w[1];
+
+				// Therefore, we jump 4 bytes and start flashing from there.
+				start = 4;
+
+				// save the first word and don't program it until everything else is done
+				first_word = flash_buffer.w[start];
+				// replace first word with bits we can overwrite later
+				flash_buffer.w[start] = 0xffffffff;
+			}
+
+			arg /= 4;
+			for (int i = start; i < arg; i++) {
+
+				// program the word
+				flash_func_write_word(address, flash_buffer.w[i]);
+
+				// do immediate read-back verify
+				if (flash_func_read_word(address) != flash_buffer.w[i]) {
+					goto cmd_fail;
+				}
+
+				address += 4;
+			}
+
+			break;
+
+		// Read the flash and compute the CRC sum over the number of bytes
+		// that were programmed (not over the whole flash like in GET_CRC).
+		//
+		// The CRC32 sum has already been supplied at the beginning of the
+		// flash process in the header.
+		//
+		// command:				CHECK_CRC/EOC
+		// sum correct reply:	INSYNC/OK
+		// sum incorrect reply:	INSYNC/FAILURE
+		//
+		case PROTO_CHECK_CRC:
+
+			// expect EOC
+			if (!wait_for_eoc(2)) {
+				goto cmd_bad;
+			}
+
+			// compute CRC of the programmed area
+			uint32_t crc32_sum_read = 0;
+
+			for (unsigned p = 0; p < num_to_flash; p += 4) {
+				uint32_t bytes;
+
+				if ((p == 0) && (first_word != 0xffffffff)) {
+					bytes = first_word;
+
+				} else {
+					bytes = flash_func_read_word(p);
+				}
+
+				crc32_sum_read = crc32((uint8_t *)&bytes, sizeof(bytes), crc32_sum_read);
+			}
+
+			if (crc32_sum_read != crc32_sum) {
+				goto cmd_fail;
+			}
+			break;
+#endif
 
 		default:
 			continue;

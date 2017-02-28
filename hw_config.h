@@ -619,6 +619,7 @@
 # define USBDEVICESTRING                "PX4 BL TAP v2.x"
 # define USBPRODUCTID                   0x0042
 # define BOOT_DELAY_ADDRESS             0x000001a0
+# define ENABLE_ENCRYPTION
 
 # define BOARD_TYPE                     66
 # define BOARD_FLASH_SECTORS            11
