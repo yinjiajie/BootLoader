@@ -4,3 +4,4 @@
 [submodule "libaes"]
 	path = libaes
 	url = https://github.com/kokke/tiny-AES128-C.git
+	ignore = dirty
