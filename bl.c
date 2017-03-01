@@ -108,7 +108,7 @@
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
 
-#define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
+#define PROTO_PROG_MULTI_MAX    255	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
 #ifdef ENABLE_ENCRYPTION
