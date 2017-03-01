@@ -996,12 +996,6 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
-			if (num_to_flash > board_info.fw_size) {
-				// If something with the encryption went wrong, chances are high
-				// that this number is bigger than the flash space and we can give up.
-				goto cmd_fail;
-			}
-
 			// We need chunks of 16 bytes to decrypt
 			if (arg % 16 == 0 && arg < PROTO_PROG_MULTI_MAX) {
 				// We loop in chunks of 16 even though the AES function provides a
@@ -1039,6 +1033,12 @@ bootloader(unsigned timeout)
 				first_word = flash_buffer.w[start];
 				// replace first word with bits we can overwrite later
 				flash_buffer.w[start] = 0xffffffff;
+			}
+
+			if (num_to_flash > board_info.fw_size) {
+				// If something with the encryption went wrong, chances are high
+				// that this number is bigger than the flash space and we can give up.
+				goto cmd_fail;
 			}
 
 			arg /= 4;
