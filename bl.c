@@ -80,8 +80,30 @@
 // loop:
 //      PROG_MULTI      program bytes
 // GET_CRC		verify CRC of entire flashable area
-// RESET		finalise flash programming, reset chip and starts application
+// BOOT		finalise flash programming, reset chip and starts application
 //
+//
+// Expected workflow with encryption (revision 6) is:
+//
+// GET_SYNC
+// GET_DEVICE
+// CHIP_ERASE
+// SET_IV						Send the initialisation vector for the encryption.
+// loop: PROG_MULTI_ENCRYPTED	Send the encrypted data,
+//								(the first 4 words of the first packet are header bytes:
+//
+//								uint32_t: Number of bytes to flash and to make CRC32 over.
+// 								uint32_t: CRC32
+// 								uint32_t: Reserved 1
+// 								uint32_t: Reserved 2
+//
+// CHECK_CRC					Compare the CRC sum (sent in the header) to the CRC sum
+//								calculated over the flashed data. Not like with GET_CRC, the sum
+//								is not calculated over the whole flash space of the chip but
+//								only over the bytes that have been flashed (as specified in the
+//								header above).
+//
+// BOOT							Finalize the programming and start the application.
 
 #define BL_PROTOCOL_VERSION 		6		// The revision of the bootloader protocol
 // protocol bytes
@@ -956,12 +978,6 @@ bootloader(unsigned timeout)
 
 		// Encrypted programming using AES-128 CBC.
 		// The first 4 words are header data and not flash data.
-		//
-		// Header:
-		// uint32_t: Number of bytes to flash and to make CRC32 over.
-		// uint32_t: CRC32
-		// uint32_t: Reserved 1
-		// uint32_t: Reserved 2
 		//
 		// command:			SET_IV/<data,16>/EOC
 		// reply:			INSYNC/OK
