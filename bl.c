@@ -1092,6 +1092,13 @@ bootloader(unsigned timeout)
 		// Read the flash and compute the CRC sum over the number of bytes
 		// that were programmed (not over the whole flash like in GET_CRC).
 		//
+		// This command differs from GET_CRC because the CRC is not compared
+		// on the flasher's side but on the bootloader side because the
+		// flasher doesn't necessarily know the private key needed to see
+		// the CRC sum.
+		// The result of the check goes back to the flasher which can then
+		// initiate BOOT as usual.
+		//
 		// The CRC32 sum has already been supplied at the beginning of the
 		// flash process in the header.
 		//
