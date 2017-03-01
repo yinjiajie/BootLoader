@@ -503,7 +503,7 @@ bootloader(unsigned timeout)
 #ifdef ENABLE_ENCRYPTION
 	uint32_t num_to_flash = 0;
 	uint32_t crc32_sum = 0;
-	const uint8_t key[16] = {0xc9, 0x9e, 0x53, 0xed, 0xad, 0x9b, 0xe7, 0x75, 0x1b, 0x44, 0x75, 0xd8, 0xcb, 0x0a, 0x8a, 0x2f};
+	static const uint8_t key[16] = AES_KEY;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
 #endif

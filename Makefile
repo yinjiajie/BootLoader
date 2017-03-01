@@ -31,7 +31,9 @@ export FLAGS		 = -std=gnu99 \
 			   -lnosys \
 			   -Wl,-gc-sections \
 			   -Wl,-g \
-			   -Werror
+			   -Werror \
+			   -DAES_KEY=\"$(AES_KEY)\"
+
 
 export COMMON_SRCS	 = bl.c cdcacm.c  usart.c $(LIBAES)/aes.c
 
