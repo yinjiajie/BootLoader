@@ -985,7 +985,7 @@ bootloader(unsigned timeout)
 			break;
 
 		// Encrypted programming using AES-128 CBC.
-		// The first 4 words are header data and not flash data.
+		// The first 4 32 bit words of the the complete file image are header data and not flash data.
 		//
 		// command:			SET_IV/<data,16>/EOC
 		// reply:			INSYNC/OK
