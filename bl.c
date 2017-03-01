@@ -523,7 +523,6 @@ bootloader(unsigned timeout)
 #ifdef ENABLE_ENCRYPTION
 	uint32_t num_to_flash = 0;
 	uint32_t crc32_sum = 0;
-	bool crc32_check_ok = false;
 	static const uint8_t key[16] = AES_KEY;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
@@ -928,13 +927,6 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
-#ifdef ENABLE_ENCRYPTION
-			// Don't allow booting if CRC has not been checked yet.
-			if (!crc32_check_ok) {
-				goto cmd_fail;
-			}
-#endif
-
 			// program the deferred first word
 			if (first_word != 0xffffffff) {
 				flash_func_write_word(0, first_word);
@@ -1136,12 +1128,9 @@ bootloader(unsigned timeout)
 				crc32_sum_read = crc32((uint8_t *)&bytes, sizeof(bytes), crc32_sum_read);
 			}
 
-			crc32_check_ok = (crc32_sum_read == crc32_sum);
-
-			if (!crc32_check_ok) {
+			if (crc32_sum_read != crc32_sum) {
 				goto cmd_fail;
 			}
-
 			break;
 #endif
 
