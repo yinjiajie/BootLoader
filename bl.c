@@ -527,6 +527,14 @@ bootloader(unsigned timeout)
 	static const uint8_t key[16] = AES_KEY;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
+
+	// The first 4 32bit words of the decrypted data contain CRC and number of bytes.
+	typedef struct __attribute__((packed)) {
+		uint32_t num_to_flash;
+		uint32_t crc32_sum;
+		uint32_t reserved1;
+		uint32_t reserved2;
+	} encryption_header_t;
 #endif
 
 	/* (re)start the timer system */
@@ -1044,9 +1052,11 @@ bootloader(unsigned timeout)
 				}
 
 #endif
+				encryption_header_t *header = (encryption_header_t *)&flash_buffer.w[0];
+
 				// The first 4 bytes are header bytes and not actual flash content.
-				num_to_flash = flash_buffer.w[0];
-				crc32_sum = flash_buffer.w[1];
+				num_to_flash = header->num_to_flash;
+				crc32_sum = header->crc32_sum;
 
 				// Therefore, we jump 4 bytes and start flashing from there.
 				start = 4;
