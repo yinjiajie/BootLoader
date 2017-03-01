@@ -83,7 +83,7 @@
 // RESET		finalise flash programming, reset chip and starts application
 //
 
-#define BL_PROTOCOL_VERSION 		5		// The revision of the bootloader protocol
+#define BL_PROTOCOL_VERSION 		6		// The revision of the bootloader protocol
 // protocol bytes
 #define PROTO_INSYNC				0x12    // 'in sync' byte sent before status
 #define PROTO_EOC					0x20    // end of command
@@ -111,11 +111,9 @@
 #define PROTO_PROG_MULTI_MAX    255	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
-#ifdef ENABLE_ENCRYPTION
 #define PROTO_SET_IV				0x36	// send initialization vector
 #define PROTO_PROG_MULTI_ENCRYPTED	0x37	// like PROG_MULTI but encrypted with AES-128
 #define PROTO_CHECK_CRC				0x38	// Check the CRC which is included in the last 4 bytes
-#endif
 
 
 /* argument values for PROTO_GET_DEVICE */
