@@ -978,10 +978,12 @@ bootloader(unsigned timeout)
 
 		// Encrypted programming using AES-128 CBC.
 		// The first 4 32 bit words of the the complete file image are header data and not flash data.
+		// The packets need to to have a size multiple of 16 bytes for the encryption.
 		//
-		// command:			SET_IV/<data,16>/EOC
-		// reply:			INSYNC/OK
+		// command:			PROG_MULTI_ENCRYPTED/<len:1>/<data:len>/EOC
+		// success reply:	INSYNC/OK
 		// invalid reply:	INSYNC/INVALID
+		// readback failure:	INSYNC/FAILURE
 		//
 		case PROTO_PROG_MULTI_ENCRYPTED:
 			// expect count
