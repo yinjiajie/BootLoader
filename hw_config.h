@@ -841,7 +841,7 @@
 # define BOARD_FORCE_BL_PULL            GPIO_PUPD_PULLUP
 # define BOARD_FORCE_BL_VALUE           0
 
-# define BOARD_FLASH_SECTORS            96   /* 128 but only program to last sec of app */
+# define BOARD_FLASH_SECTORS            (96-10)   /* 128 but only program to last sec of app-bootloader secotrs */
 # define BOARD_TYPE                     67
 # define FLASH_SECTOR_SIZE              0x800
 
