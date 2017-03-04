@@ -56,7 +56,8 @@ TARGETS	= \
 	px4io_bl \
 	px4iov3_bl \
 	tapv1_bl \
-	tapv2_bl
+	tapv2_bl \
+	gimbal_cgo3_plus
 
 all:	$(TARGETS)
 
@@ -117,6 +118,9 @@ tapv1_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
 
 tapv2_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
 	make -f Makefile.f4 TARGET_HW=TAP_V2 LINKER_FILE=stm32f4.ld TARGET_FILE_NAME=$@
+
+gimbal_cgo3_plus: $(MAKEFILE_LIST) $(LIBOPENCM3)
+	make -f Makefile.f3 TARGET_HW=GIMBAL_CGO3_PLUS LINKER_FILE=stm32f3-20kib.ld TARGET_FILE_NAME=$@
 
 aerofcv1_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
 	make -f Makefile.f4 TARGET_HW=AEROFC_V1 LINKER_FILE=stm32f4.ld TARGET_FILE_NAME=$@
