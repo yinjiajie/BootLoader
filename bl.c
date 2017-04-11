@@ -602,7 +602,7 @@ bootloader(unsigned timeout)
 	uint32_t crc32_sum = 0;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
-	static int8_t key_state = -1;
+	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
 
 	// The first 4 32bit words of the decrypted data contain CRC and number of bytes.
 	typedef struct __attribute__((packed)) {
@@ -1107,7 +1107,7 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
-			/* Did this unit have unencrpted FW DL to it?
+			/* Did this unit have unencrypted firmware programmed to it?
 			 * If So, then indicate so as the the warranty on this unit is voided.
 			 */
 
