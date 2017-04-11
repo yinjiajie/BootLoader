@@ -122,3 +122,11 @@ extern void cinit(void *config, uint8_t interface);
 extern void cfini(void);
 extern int cin(void);
 extern void cout(uint8_t *buf, unsigned len);
+
+#ifdef ENABLE_ENCRYPTION
+/*****************************************************************************
+ * Encryption Interface.
+ */
+
+extern uint32_t validate_key();
+#endif

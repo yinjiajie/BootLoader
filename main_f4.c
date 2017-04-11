@@ -164,12 +164,13 @@ struct boardinfo board_info = {
 #if defined(ENABLE_ENCRYPTION)
 /**
  *  We will lock out the use of JTAG when encryption is
- *  Enabled and the key is not a dev key that
+ *  Enabled and the key is not all 0 and is not a dev key that
  *  starts with [de][ad][be][ef];
  */
 void check_enable_flash_read_protection(void)
 {
-	if (!(key[0] == 0xde && key[1] == 0xad && key[2] == 0xbe && key[3] == 0xef)) {
+	if (validate_key() == 0 &&
+		!(key[0] == 0xde && key[1] == 0xad && key[2] == 0xbe && key[3] == 0xef)) {
 		if (FLASH_OPTCR_RDP == FLASH_OPTCR_RDP_LEVEL0) {
 			uint32_t optcr = FLASH_OPTCR;
 			optcr &= ~FLASH_OPTCR_RDP_MASK;

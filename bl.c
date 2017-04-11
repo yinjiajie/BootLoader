@@ -147,6 +147,33 @@
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
 
+#ifdef ENABLE_ENCRYPTION
+/* Provide a default key if none is provided on command line.
+ *
+ * With a key of all zeros:
+ *   1) The chip will not be locked.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will fail with PROTO_BAD_KEY
+ *    on the address 0
+ *
+ * With a key that starts with deadbeef
+ *   1) The chip will not be locked.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will work, provided the file
+ *       is encryted with the same key. It will be debugable.
+ *   3) Any PROTO_PROG_MULTI download will Zero the Key, the chip will remain onlocked.
+ *
+ * With a key that does not start with deadbeef
+ *   1) The chip will be locked on first boot. It will not be debugable, attems to do
+ *      so will erase the chip Bottloader and all.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will work, provided the file is encryted with
+ *      the same key.
+ *   3) Any PROTO_PROG_MULTI download will Zero the Key, the chip will remain locked.
+ *
+ */
+# if !defined(AES_KEY)
+#    define AES_KEY {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+#  endif
+#endif
+
 typedef union {
 	uint8_t		c[256];
 	uint32_t	w[64];
@@ -533,7 +560,7 @@ const uint8_t key[16] = AES_KEY;
 
 uint32_t validate_key()
 {
-	uint32_t *address = (uint32_t *) key;
+	volatile uint32_t *address = (volatile uint32_t *) key;
 	uint32_t words = sizeof(key) / sizeof(uint32_t);
 
 	while (words--) {
