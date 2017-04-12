@@ -78,7 +78,6 @@ static struct {
 #define FLASH_OPTCR_RDP_LEVEL0		0xaa // No Read
 #define FLASH_OPTCR_RDP_LEVEL1		0x55 //
 #define FLASH_OPTCR_RDP_LEVEL2		0xcc //  /* Warning: When enabling read protection level 2 it is not possible to go back to level 1 or 0 */
-extern const uint8_t key[16];
 
 // address of MCU IDCODE
 #define DBGMCU_IDCODE		0xE0042000
@@ -165,12 +164,12 @@ struct boardinfo board_info = {
 /**
  *  We will lock out the use of JTAG when encryption is
  *  Enabled and the key is not all 0 and is not a dev key that
- *  starts with [de][ad][be][ef];
+ *  starts with [de][ad][be][ef] (0xefbeadde in machine order);
  */
 void check_enable_flash_read_protection(void)
 {
 	if (validate_key() == 0 &&
-		!(key[0] == 0xde && key[1] == 0xad && key[2] == 0xbe && key[3] == 0xef)) {
+		key.w[0] != 0xefbeadde) {
 		if (FLASH_OPTCR_RDP == FLASH_OPTCR_RDP_LEVEL0) {
 			uint32_t optcr = FLASH_OPTCR;
 			optcr &= ~FLASH_OPTCR_RDP_MASK;

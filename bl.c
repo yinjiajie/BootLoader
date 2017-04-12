@@ -556,12 +556,14 @@ crc32(const uint8_t *src, unsigned len, unsigned state)
 
 #ifdef ENABLE_ENCRYPTION
 
-const uint8_t key[16] = AES_KEY;
+const encryption_key_t key = {
+	.b = AES_KEY
+};
 
 uint32_t validate_key()
 {
-	volatile uint32_t *address = (volatile uint32_t *) key;
-	uint32_t words = sizeof(key) / sizeof(uint32_t);
+	const volatile uint32_t *address =  &key.w[0];
+	uint32_t words = sizeof(key.w) / sizeof(key.w[0]);
 
 	while (words--) {
 		if (*address != 0) {
@@ -576,8 +578,8 @@ uint32_t validate_key()
 
 void zero_key()
 {
-	uint32_t *address = (uint32_t *) &key[0];
-	uint32_t words = sizeof(key) / sizeof(uint32_t);
+	const volatile uint32_t *address =  &key.w[0];
+	uint32_t words = sizeof(key.w) / sizeof(key.w[0]);
 
 	while (words--) {
 		if (*address != 0) {
@@ -1121,7 +1123,7 @@ bootloader(unsigned timeout)
 				// We loop in chunks of 16 even though the AES function provides a
 				// length argument, however, we didn't have success using it.
 				for (int i = 0; i < arg; i += 16) {
-					AES128_CBC_decrypt_buffer(&flash_buffer.c[i], &encrypted_buffer.c[i], 16, key, iv);
+					AES128_CBC_decrypt_buffer(&flash_buffer.c[i], &encrypted_buffer.c[i], 16, key.b, iv);
 
 					for (int j = 0; j < 16; ++j) {
 						// Also, it seems like we need to take care of iv on every iteration.
