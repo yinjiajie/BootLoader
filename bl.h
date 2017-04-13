@@ -122,3 +122,19 @@ extern void cinit(void *config, uint8_t interface);
 extern void cfini(void);
 extern int cin(void);
 extern void cout(uint8_t *buf, unsigned len);
+
+#ifdef ENABLE_ENCRYPTION
+/*****************************************************************************
+ * Encryption Interface.
+ */
+#define ENCRYPTION_KEY_SIZE_BYTES 16
+typedef union __attribute__((packed, aligned(4)))
+{
+	uint8_t		b[ENCRYPTION_KEY_SIZE_BYTES];
+	uint32_t	w[ENCRYPTION_KEY_SIZE_BYTES / sizeof(uint32_t)];
+} encryption_key_t;
+
+extern const encryption_key_t key;
+
+extern uint32_t validate_key();
+#endif

@@ -69,7 +69,15 @@ static struct {
 
 #define OTP_BASE			0x1fff7800
 #define OTP_SIZE			512
-#define UDID_START		        0x1FFF7A10
+#define UDID_START			0x1FFF7A10
+
+#define FLASH_OPTCR_RDP				MMIO8(FLASH_MEM_INTERFACE_BASE + 0x15)
+#define FLASH_OPTCR_RDP_SHIFT		8
+#define FLASH_OPTCR_RDP_MASK		(0xff << FLASH_OPTCR_RDP_SHIFT)
+#define FLASH_OPTCR_RDP_LEVEL(l)	((l) << FLASH_OPTCR_RDP_SHIFT)
+#define FLASH_OPTCR_RDP_LEVEL0		0xaa // No Read
+#define FLASH_OPTCR_RDP_LEVEL1		0x55 //
+#define FLASH_OPTCR_RDP_LEVEL2		0xcc //  /* Warning: When enabling read protection level 2 it is not possible to go back to level 1 or 0 */
 
 // address of MCU IDCODE
 #define DBGMCU_IDCODE		0xE0042000
@@ -151,6 +159,26 @@ struct boardinfo board_info = {
 
 	.systick_mhz	= 168,
 };
+
+#if defined(ENABLE_ENCRYPTION)
+/**
+ *  We will lock out the use of JTAG when encryption is
+ *  Enabled and the key is not all 0 and is not a dev key that
+ *  starts with [de][ad][be][ef] (0xefbeadde in machine order);
+ */
+void check_enable_flash_read_protection(void)
+{
+	if (validate_key() == 0 &&
+		key.w[0] != 0xefbeadde) {
+		if (FLASH_OPTCR_RDP == FLASH_OPTCR_RDP_LEVEL0) {
+			uint32_t optcr = FLASH_OPTCR;
+			optcr &= ~FLASH_OPTCR_RDP_MASK;
+			optcr |= FLASH_OPTCR_RDP_LEVEL(FLASH_OPTCR_RDP_LEVEL1);
+			flash_program_option_bytes(optcr);
+		}
+	}
+}
+#endif
 
 static void board_init(void);
 
@@ -320,6 +348,7 @@ board_test_usart_receiving_break()
 	if (cnt_consecutive_low >= 18) {
 		return true;
 	}
+
 #endif // !defined(SERIAL_BREAK_DETECT_DISABLED)
 
 	return false;
@@ -694,6 +723,10 @@ main(void)
 
 	/* Enable the FPU before we hit any FP instructions */
 	SCB_CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10 Full Access and set CP11 Full Access */
+
+#if defined(ENABLE_ENCRYPTION)
+	check_enable_flash_read_protection();
+#endif
 
 #if defined(BOARD_POWER_PIN_OUT) && !defined(HAS_DIRECT_POWER_CTRL)
 

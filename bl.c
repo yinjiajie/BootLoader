@@ -116,6 +116,8 @@
 #define PROTO_INVALID				0x13	// INSYNC/INVALID - 'invalid' response for bad commands
 #define PROTO_BAD_SILICON_REV 		0x14 	// On the F4 series there is an issue with < Rev 3 silicon
 // see https://pixhawk.org/help/errata
+#define PROTO_BAD_KEY				0x15 	// INSYNC/BAD_KEY - 'PROTO_PROG_MULTI_ENCRYPTED run with zeroed out Key'
+
 // Command bytes
 #define PROTO_GET_SYNC				0x21    // NOP for re-establishing sync
 #define PROTO_GET_DEVICE			0x22    // get device ID bytes
@@ -145,9 +147,36 @@
 #define PROTO_DEVICE_FW_SIZE	4	// size of flashable area
 #define PROTO_DEVICE_VEC_AREA	5	// contents of reserved vectors 7-10
 
+#ifdef ENABLE_ENCRYPTION
+/* Provide a default key if none is provided on command line.
+ *
+ * With a key of all zeros:
+ *   1) The chip will not be locked.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will fail with PROTO_BAD_KEY
+ *    on the address 0
+ *
+ * With a key that starts with deadbeef
+ *   1) The chip will not be locked.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will work, provided the file
+ *       is encryted with the same key. It will be debugable.
+ *   3) Any PROTO_PROG_MULTI download will Zero the Key, the chip will remain onlocked.
+ *
+ * With a key that does not start with deadbeef
+ *   1) The chip will be locked on first boot. It will not be debugable, attems to do
+ *      so will erase the chip Bottloader and all.
+ *   2) The PROTO_PROG_MULTI_ENCRYPTED will work, provided the file is encryted with
+ *      the same key.
+ *   3) Any PROTO_PROG_MULTI download will Zero the Key, the chip will remain locked.
+ *
+ */
+# if !defined(AES_KEY)
+#    define AES_KEY {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+#  endif
+#endif
+
 typedef union {
-    uint8_t		c[256];
-    uint32_t	w[64];
+	uint8_t		c[256];
+	uint32_t	w[64];
 } flash_buffer_t;
 
 
@@ -396,6 +425,19 @@ bad_silicon_response(void)
 }
 #endif
 
+#if defined(ENABLE_ENCRYPTION)
+static void
+bad_key_response(void)
+{
+	uint8_t data[] = {
+		PROTO_INSYNC,			// "in sync"
+		PROTO_BAD_KEY	        // "Key Has been zeroed"
+	};
+
+	cout(data, sizeof(data));
+}
+#endif
+
 static void
 invalid_response(void)
 {
@@ -512,6 +554,43 @@ crc32(const uint8_t *src, unsigned len, unsigned state)
 	return state;
 }
 
+#ifdef ENABLE_ENCRYPTION
+
+const encryption_key_t key = {
+	.b = AES_KEY
+};
+
+uint32_t validate_key()
+{
+	const volatile uint32_t *address =  &key.w[0];
+	uint32_t words = sizeof(key.w) / sizeof(key.w[0]);
+
+	while (words--) {
+		if (*address != 0) {
+			return 0;
+		}
+
+		address++;
+	}
+
+	return 1;
+}
+
+void zero_key()
+{
+	const volatile uint32_t *address =  &key.w[0];
+	uint32_t words = sizeof(key.w) / sizeof(key.w[0]);
+
+	while (words--) {
+		if (*address != 0) {
+			flash_program_word((uint32_t)address, 0);
+		}
+
+		address++;
+	}
+}
+#endif
+
 void
 bootloader(unsigned timeout)
 {
@@ -523,9 +602,9 @@ bootloader(unsigned timeout)
 #ifdef ENABLE_ENCRYPTION
 	uint32_t num_to_flash = 0;
 	uint32_t crc32_sum = 0;
-	static const uint8_t key[16] = AES_KEY;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
+	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
 
 	// The first 4 32bit words of the decrypted data contain CRC and number of bytes.
 	typedef struct __attribute__((packed)) {
@@ -549,6 +628,9 @@ bootloader(unsigned timeout)
 
 	/* make the LED blink while we are idle */
 	led_set(LED_BLINK);
+#ifdef ENABLE_ENCRYPTION
+	key_state = validate_key();
+#endif
 
 	while (true) {
 		volatile int c;
@@ -739,7 +821,12 @@ bootloader(unsigned timeout)
 				}
 
 #endif
-
+#if defined(ENABLE_ENCRYPTION)
+				// An unencrypted Download is Ok to do
+				// But the Key will be Zeroed out.
+				// This will then void the warranty on this unit.
+				zero_key();
+#endif
 				// save the first word and don't program it until everything else is done
 				first_word = flash_buffer.w[0];
 				// replace first word with bits we can overwrite later
@@ -951,6 +1038,7 @@ bootloader(unsigned timeout)
 			break;
 
 #ifdef ENABLE_ENCRYPTION
+
 		// For encrypted programming, we need the initialization vector
 		// to decrypt AES-128 CBC.
 		//
@@ -959,6 +1047,7 @@ bootloader(unsigned timeout)
 		// invalid reply:	INSYNC/INVALID
 		//
 		case PROTO_SET_IV:
+
 			// expect 16 bytes
 			for (int i = 0; i < 16; i++) {
 				c = cin_wait(1000);
@@ -1020,15 +1109,25 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
+			/* Did this unit have unencrypted firmware programmed to it?
+			 * If So, then indicate so as the the warranty on this unit is voided.
+			 */
+
+			if (key_state != 0) {
+				goto bad_key;
+
+			}
+
 			// We need chunks of 16 bytes to decrypt
 			if (arg % 16 == 0 && arg < PROTO_PROG_MULTI_MAX) {
 				// We loop in chunks of 16 even though the AES function provides a
 				// length argument, however, we didn't have success using it.
 				for (int i = 0; i < arg; i += 16) {
-					AES128_CBC_decrypt_buffer(&flash_buffer.c[i], &encrypted_buffer.c[i], 16, key, iv);
+					AES128_CBC_decrypt_buffer(&flash_buffer.c[i], &encrypted_buffer.c[i], 16, key.b, iv);
+
 					for (int j = 0; j < 16; ++j) {
 						// Also, it seems like we need to take care of iv on every iteration.
-						iv[j] = encrypted_buffer.c[i+j];
+						iv[j] = encrypted_buffer.c[i + j];
 					}
 				}
 
@@ -1037,6 +1136,7 @@ bootloader(unsigned timeout)
 			}
 
 			int start = 0;
+
 			if (address == 0) {
 
 #if defined(TARGET_HW_PX4_FMU_V4)
@@ -1068,6 +1168,7 @@ bootloader(unsigned timeout)
 			}
 
 			arg /= 4;
+
 			for (int i = start; i < arg; i++) {
 
 				// program the word
@@ -1133,6 +1234,7 @@ bootloader(unsigned timeout)
 			if (crc32_sum_read != crc32_sum) {
 				goto cmd_fail;
 			}
+
 			break;
 #endif
 
@@ -1166,6 +1268,13 @@ cmd_fail:
 bad_silicon:
 		// send the bad silicon response but don't kill the timeout - could be garbage
 		bad_silicon_response();
+		continue;
+#endif
+
+#ifdef ENABLE_ENCRYPTION
+bad_key:
+		// send the bad key  response but don't kill the timeout
+		bad_key_response();
 		continue;
 #endif
 	}
