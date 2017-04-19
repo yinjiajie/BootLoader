@@ -138,6 +138,7 @@
 #define PROTO_SET_IV				0x36	// send initialization vector
 #define PROTO_PROG_MULTI_ENCRYPTED	0x37	// like PROG_MULTI but encrypted with AES-128
 #define PROTO_CHECK_CRC				0x38	// Check the CRC which is included in the last 4 bytes
+#define PROTO_CHECK_KEY				0x39	// Check the Key is valid (not all 0s)
 
 
 /* argument values for PROTO_GET_DEVICE */
@@ -1236,6 +1237,26 @@ bootloader(unsigned timeout)
 			}
 
 			break;
+
+		// Check the Key State
+		//
+		// command:           CHECK_KEY/EOC
+		// Key Valid reply:   INSYNC/OK
+		// Key invalid reply: INSYNC/BAD_KEY
+		//
+		case PROTO_CHECK_KEY:
+
+			// expect EOC
+			if (!wait_for_eoc(2)) {
+				goto cmd_bad;
+			}
+
+			if (key_state != 0) {
+				goto bad_key;
+			}
+
+			break;
+
 #endif
 
 		default:
