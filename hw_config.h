@@ -801,7 +801,7 @@
 
 # define APP_LOAD_ADDRESS               0x08005000
 # define APP_SIZE_MAX                   0x2b000
-# define BOOTLOADER_DELAY               500
+# define BOOTLOADER_DELAY               2000
 # define ENABLE_ENCRYPTION
 # define BOARD_GIMBAL_CGO3_PLUS
 # define INTERFACE_USB                  0
@@ -809,7 +809,7 @@
 # define USBDEVICESTRING                ""
 # define USBPRODUCTID                   -1
 
-# define OSC_FREQ                       16
+# define OSC_FREQ                       64
 
 # define BOARD_PIN_LED_ACTIVITY         GPIO8
 # define BOARD_PIN_LED_BOOTLOADER       GPIO9
