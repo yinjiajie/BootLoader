@@ -834,13 +834,13 @@
  *  There is no connection on PC13 - Pin 2 on the SoC
  *  So this is here just in case
  *  Pull it Down to activate
- */
 # define BOARD_FORCE_BL_PIN             GPIO12
 # define BOARD_FORCE_BL_PORT            GPIOC
 # define BOARD_FORCE_BL_CLOCK_REGISTER  RCC_AHBENR
 # define BOARD_FORCE_BL_CLOCK_BIT       RCC_AHBENR_IOPCEN
 # define BOARD_FORCE_BL_PULL            GPIO_PUPD_PULLUP
 # define BOARD_FORCE_BL_VALUE           0
+*/
 
 # define BOARD_FLASH_SECTORS            (96-10)   /* 128 but only program to last sec of app-bootloader secotrs */
 # define BOARD_TYPE                     67
