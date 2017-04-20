@@ -22,6 +22,15 @@
 #define FLASH_BASE			(0x08000000U)
 #define BOOT_RTC_REG        MMIO32(RTC_BASE + 0x50)
 
+#define FLASH_OPTKEYR           MMIO32(FLASH_MEM_INTERFACE_BASE + 0x08)
+#define FLASH_OBR_RDPRT_SHIFT   1
+#define FLASH_OBR_RDPRT_MASK	(3 << FLASH_OBR_RDPRT_SHIFT)
+#define FLASH_OBR_RDPRT_L0		(0 << FLASH_OBR_RDPRT_SHIFT)
+#define FLASH_OBR_RDPRT_L1		(1 << FLASH_OBR_RDPRT_SHIFT)
+#define FLASH_OBR_RDPRT_L2		(3 << FLASH_OBR_RDPRT_SHIFT)
+
+#define FLASH_OB_RDP			0x1FFFF800
+#define FLASH_OB_RDP_LEVEL1		0x55
 
 #ifdef INTERFACE_USART
 # define BOARD_INTERFACE_CONFIG		(void *)BOARD_USART
@@ -51,6 +60,74 @@ struct boardinfo board_info = {
 };
 
 static void board_init(void);
+
+#if defined(ENABLE_ENCRYPTION)
+
+void flash_unlock_option_bytes(void)
+{
+	FLASH_OPTKEYR = FLASH_KEYR_KEY1;
+	FLASH_OPTKEYR = FLASH_KEYR_KEY2;
+}
+
+void flash_lock_option_bytes(void)
+{
+	FLASH_CR &= ~FLASH_CR_OPTWRE;
+}
+
+void flash_erase_option_bytes(void)
+{
+	flash_wait_for_last_operation();
+
+	if ((FLASH_CR & FLASH_CR_OPTWRE) == 0) {
+		flash_unlock_option_bytes();
+	}
+
+	FLASH_CR |= FLASH_CR_OPTER;	/* Enable option byte erase. */
+	FLASH_CR |= FLASH_CR_STRT;
+	flash_wait_for_last_operation();
+	FLASH_CR &= ~FLASH_CR_OPTER;	/* Disable option byte erase. */
+}
+
+void flash_program_option_bytes(uint32_t address, uint16_t data)
+{
+	flash_wait_for_last_operation();
+
+	if ((FLASH_CR & FLASH_CR_OPTWRE) == 0) {
+		flash_unlock_option_bytes();
+	}
+
+	FLASH_CR |= FLASH_CR_OPTPG;	/* Enable option byte programming. */
+	MMIO16(address) = data;
+	flash_wait_for_last_operation();
+	FLASH_CR &= ~FLASH_CR_OPTPG;	/* Disable option byte programming. */
+}
+
+void flash_program_option_launch()
+{
+	FLASH_CR |= FLASH_CR_OBL_LAUNCH;	/*  launch the option byte loading  */
+}
+
+/**
+ *  We will lock out the use of JTAG when encryption is
+ *  Enabled and the key is not all 0 and is not a dev key that
+ *  starts with [de][ad][be][ef] (0xefbeadde in machine order);
+ */
+void check_enable_flash_read_protection(void)
+{
+	if (validate_key() == 0 &&
+	    key.w[0] != 0xefbeadde) {
+		if ((FLASH_OBR & FLASH_OBR_RDPRT_MASK) == FLASH_OBR_RDPRT_L0) {
+			flash_unlock();
+			flash_unlock_option_bytes();
+			flash_erase_option_bytes();
+			flash_program_option_bytes(FLASH_OB_RDP, FLASH_OB_RDP_LEVEL1);
+			flash_program_option_launch();
+			flash_lock_option_bytes();
+			flash_lock();
+		}
+	}
+}
+#endif
 
 static void
 board_init(void)
@@ -275,6 +352,10 @@ flash_func_write_word(uint32_t address, uint32_t word)
 uint32_t
 flash_func_read_word(uint32_t address)
 {
+	if (address & 3) {
+		return 0;
+	}
+
 	return *(uint32_t *)(address + APP_LOAD_ADDRESS);
 }
 
@@ -379,6 +460,9 @@ int
 main(void)
 {
 	unsigned timeout = 0;
+#if defined(ENABLE_ENCRYPTION)
+	check_enable_flash_read_protection();
+#endif
 
 	/* do board-specific initialisation */
 	board_init();

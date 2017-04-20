@@ -137,4 +137,5 @@ typedef union __attribute__((packed, aligned(4)))
 extern const encryption_key_t key;
 
 extern uint32_t validate_key();
+extern void flash_program_word(uint32_t address, uint32_t data);
 #endif

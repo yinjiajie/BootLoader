@@ -802,6 +802,7 @@
 # define APP_LOAD_ADDRESS               0x08005000
 # define APP_SIZE_MAX                   0x2b000
 # define BOOTLOADER_DELAY               500
+# define ENABLE_ENCRYPTION
 # define BOARD_GIMBAL_CGO3_PLUS
 # define INTERFACE_USB                  0
 # define INTERFACE_USART                1
