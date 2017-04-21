@@ -806,6 +806,7 @@
 # define BOARD_GIMBAL_CGO3_PLUS
 # define INTERFACE_USB                  0
 # define INTERFACE_USART                1
+# define OVERRIDE_USART_BAUDRATE        500000
 # define USBDEVICESTRING                ""
 # define USBPRODUCTID                   -1
 
