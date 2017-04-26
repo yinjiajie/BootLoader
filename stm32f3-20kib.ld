@@ -25,7 +25,7 @@
  ***********************************************************************/
 
 /**
- * @file stm32f4.ld
+ * @file stm32f3-20kib.ld
  *
  * Linker script for ST STM32F3 bootloader (use first 20Kib of flash, all 32kib RAM).
  *
