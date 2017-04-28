@@ -105,7 +105,7 @@
 //
 // BOOT							Finalize the programming and start the application.
 
-#define BL_PROTOCOL_VERSION 		6		// The revision of the bootloader protocol
+#define BL_PROTOCOL_VERSION 		7		// The revision of the bootloader protocol
 // protocol bytes
 #define PROTO_INSYNC				0x12    // 'in sync' byte sent before status
 #define PROTO_EOC					0x20    // end of command
@@ -135,10 +135,10 @@
 #define PROTO_PROG_MULTI_MAX    255	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
-#define PROTO_SET_IV				0x36	// send initialization vector
-#define PROTO_PROG_MULTI_ENCRYPTED	0x37	// like PROG_MULTI but encrypted with AES-128
-#define PROTO_CHECK_CRC				0x38	// Check the CRC which is included in the last 4 bytes
-#define PROTO_CHECK_KEY				0x39	// Check the Key is valid (not all 0s)
+#define PROTO_SET_IV				0x36	// send initialization vector (rev 6+)
+#define PROTO_PROG_MULTI_ENCRYPTED	0x37	// like PROG_MULTI but encrypted with AES-128 (rev 6+)
+#define PROTO_CHECK_CRC				0x38	// Check the CRC which is included in the last 4 bytes (rev 6+)
+#define PROTO_CHECK_KEY				0x39	// Check the Key is valid (not all 0s) (rev 7+)
 
 
 /* argument values for PROTO_GET_DEVICE */
