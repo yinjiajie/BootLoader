@@ -57,6 +57,7 @@ TARGETS	= \
 	px4iov3_bl \
 	tapv1_bl \
 	tapv2_bl \
+	tapv3_bl \
 	gimbal_cgo3_plus
 
 all:	$(TARGETS)
