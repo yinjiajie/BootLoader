@@ -426,7 +426,6 @@ bad_silicon_response(void)
 }
 #endif
 
-#if defined(ENABLE_ENCRYPTION)
 static void
 bad_key_response(void)
 {
@@ -437,7 +436,6 @@ bad_key_response(void)
 
 	cout(data, sizeof(data));
 }
-#endif
 
 static void
 invalid_response(void)
@@ -1238,6 +1236,8 @@ bootloader(unsigned timeout)
 
 			break;
 
+#endif
+
 		// Check the Key State
 		//
 		// command:           CHECK_KEY/EOC
@@ -1251,13 +1251,17 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
+#ifdef ENABLE_ENCRYPTION
+
 			if (key_state != 0) {
 				goto bad_key;
 			}
 
-			break;
-
+#else
+			goto bad_key;
 #endif
+
+			break;
 
 		default:
 			continue;
@@ -1292,11 +1296,9 @@ bad_silicon:
 		continue;
 #endif
 
-#ifdef ENABLE_ENCRYPTION
 bad_key:
 		// send the bad key  response but don't kill the timeout
 		bad_key_response();
 		continue;
-#endif
 	}
 }
