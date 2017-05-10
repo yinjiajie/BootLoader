@@ -426,7 +426,6 @@ bad_silicon_response(void)
 }
 #endif
 
-#if defined(ENABLE_ENCRYPTION)
 static void
 bad_key_response(void)
 {
@@ -437,7 +436,6 @@ bad_key_response(void)
 
 	cout(data, sizeof(data));
 }
-#endif
 
 static void
 invalid_response(void)
@@ -597,6 +595,8 @@ bootloader(unsigned timeout)
 {
 	bl_type = NONE; // The type of the bootloader, whether loading from USB or USART, will be determined by on what port the bootloader recevies its first valid command.
 
+	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
+
 	uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
 	uint32_t	first_word = 0xffffffff;
 
@@ -605,7 +605,6 @@ bootloader(unsigned timeout)
 	uint32_t crc32_sum = 0;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
-	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
 
 	// The first 4 32bit words of the decrypted data contain CRC and number of bytes.
 	typedef struct __attribute__((packed)) {
@@ -1238,6 +1237,8 @@ bootloader(unsigned timeout)
 
 			break;
 
+#endif
+
 		// Check the Key State
 		//
 		// command:           CHECK_KEY/EOC
@@ -1256,8 +1257,6 @@ bootloader(unsigned timeout)
 			}
 
 			break;
-
-#endif
 
 		default:
 			continue;
@@ -1292,11 +1291,9 @@ bad_silicon:
 		continue;
 #endif
 
-#ifdef ENABLE_ENCRYPTION
 bad_key:
 		// send the bad key  response but don't kill the timeout
 		bad_key_response();
 		continue;
-#endif
 	}
 }
