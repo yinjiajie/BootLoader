@@ -595,8 +595,6 @@ bootloader(unsigned timeout)
 {
 	bl_type = NONE; // The type of the bootloader, whether loading from USB or USART, will be determined by on what port the bootloader recevies its first valid command.
 
-	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
-
 	uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
 	uint32_t	first_word = 0xffffffff;
 
@@ -605,6 +603,7 @@ bootloader(unsigned timeout)
 	uint32_t crc32_sum = 0;
 	static flash_buffer_t encrypted_buffer;
 	static uint8_t iv[16] = {0};
+	static int8_t key_state = -1; // -1: not initialized, 0: key valid, 1: key invalid
 
 	// The first 4 32bit words of the decrypted data contain CRC and number of bytes.
 	typedef struct __attribute__((packed)) {
@@ -1252,9 +1251,15 @@ bootloader(unsigned timeout)
 				goto cmd_bad;
 			}
 
+#ifdef ENABLE_ENCRYPTION
+
 			if (key_state != 0) {
 				goto bad_key;
 			}
+
+#else
+			goto bad_key;
+#endif
 
 			break;
 
