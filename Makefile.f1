@@ -17,7 +17,8 @@ FLAGS		+= -mthumb -mcpu=cortex-m3\
        -DSTM32F1 \
 		   -T$(LINKER_FILE) \
 		   -L$(LIBOPENCM3)/lib \
-		   -lopencm3_stm32f1
+		   -lopencm3_stm32f1 \
+		   -flto
 
 ELF		 = $(TARGET_FILE_NAME).elf
 BINARY		 = $(TARGET_FILE_NAME).bin
