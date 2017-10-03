@@ -300,24 +300,35 @@ board_test_usart_receiving_break()
 }
 #endif
 
+#if defined(BOARD_POWER_PIN_OUT) && !defined(HAS_DIRECT_POWER_CTRL)
+static void
+board_power_init(void)
+{
+	/* Configure the Power pins */
+	rcc_peripheral_enable_clock(&BOARD_POWER_CLOCK_REGISTER, BOARD_POWER_CLOCK_BIT);
+	gpio_mode_setup(BOARD_POWER_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BOARD_POWER_PIN_OUT);
+	gpio_set_output_options(BOARD_POWER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, BOARD_POWER_PIN_OUT);
+	BOARD_POWER_ON(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
+
+	/* enable the power controller clock */
+	rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_PWREN);
+
+}
+#endif
+
 static void
 board_init(void)
 {
 	/* fix up the max firmware size, we have to read memory to get this */
 	board_info.fw_size = APP_SIZE_MAX;
 
-#if defined(BOARD_POWER_PIN_OUT)
-	/* Configure the Power pins */
-	rcc_peripheral_enable_clock(&BOARD_POWER_CLOCK_REGISTER, BOARD_POWER_CLOCK_BIT);
-	gpio_mode_setup(BOARD_POWER_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BOARD_POWER_PIN_OUT);
-	gpio_set_output_options(BOARD_POWER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, BOARD_POWER_PIN_OUT);
-	BOARD_POWER_ON(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
-#endif
-
 #if INTERFACE_USB
 
 	/* enable Port A GPIO9 to sample VBUS */
 	rcc_peripheral_enable_clock(&RCC_AHB1ENR, RCC_AHB1ENR_IOPAEN);
+#  if defined(USE_VBUS_PULL_DOWN)
+	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN, GPIO9);
+#  endif
 #endif
 
 #if INTERFACE_USART
@@ -675,14 +686,16 @@ main(void)
 	/* Enable the FPU before we hit any FP instructions */
 	SCB_CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10 Full Access and set CP11 Full Access */
 
-#if defined(BOARD_POWER_PIN_OUT)
+#if defined(BOARD_POWER_PIN_OUT) && !defined(HAS_DIRECT_POWER_CTRL)
+
+	board_power_init();
 
 	/* Here we check for the app setting the POWER_DOWN_RTC_SIGNATURE
 	 * in this case, we reset the signature and wait to die
 	 */
 	if (board_get_rtc_signature() == POWER_DOWN_RTC_SIGNATURE) {
 		board_set_rtc_signature(0);
-
+		BOARD_POWER_OFF(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
 		while (1);
 	}
 
