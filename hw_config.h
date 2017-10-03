@@ -714,6 +714,10 @@
 
  # define USBMFGSTRING                   "The Autopilot"
 
+# define SERIAL_BREAK_DETECT_DISABLED   1
+# undef USE_VBUS_PULL_DOWN
+# undef HAS_DIRECT_POWER_CTRL
+
 /****************************************************************************
  * TARGET_HW_CRAZYFLIE
  ****************************************************************************/
