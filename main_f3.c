@@ -344,9 +344,15 @@ flash_func_erase_sector(unsigned sector)
 }
 
 void
+flash_func_phy_write_word(uint32_t address, uint32_t word)
+{
+	flash_program_word(address, word);
+}
+
+void
 flash_func_write_word(uint32_t address, uint32_t word)
 {
-	flash_program_word(address + APP_LOAD_ADDRESS, word);
+	flash_func_phy_write_word(address + APP_LOAD_ADDRESS, word);
 }
 
 uint32_t

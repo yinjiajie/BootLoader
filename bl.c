@@ -582,7 +582,7 @@ void zero_key()
 
 	while (words--) {
 		if (*address != 0) {
-			flash_program_word((uint32_t)address, 0);
+			flash_func_phy_write_word((uint32_t)address, 0);
 		}
 
 		address++;

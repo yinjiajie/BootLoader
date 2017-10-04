@@ -543,10 +543,8 @@ flash_func_erase_sector(unsigned sector)
 	}
 }
 
-void
-flash_func_write_word(uint32_t address, uint32_t word)
+void flash_func_phy_write_word(uint32_t address, uint32_t word)
 {
-	address += APP_LOAD_ADDRESS;
 
 	/* Ensure that all flash operations are complete. */
 
@@ -574,6 +572,11 @@ flash_func_write_word(uint32_t address, uint32_t word)
 	/* Disable writes to flash. */
 
 	FLASH_CR &= ~FLASH_CR_PG;
+}
+void
+flash_func_write_word(uint32_t address, uint32_t word)
+{
+	flash_func_phy_write_word(address + APP_LOAD_ADDRESS, word);
 }
 
 uint32_t

@@ -106,6 +106,7 @@ extern void clock_deinit(void);
 extern uint32_t flash_func_sector_size(unsigned sector);
 extern void flash_func_erase_sector(unsigned sector);
 extern void flash_func_write_word(uint32_t address, uint32_t word);
+extern void flash_func_phy_write_word(uint32_t address, uint32_t word);
 extern uint32_t flash_func_read_word(uint32_t address);
 extern uint32_t flash_func_read_otp(uint32_t address);
 extern uint32_t flash_func_read_sn(uint32_t address);
