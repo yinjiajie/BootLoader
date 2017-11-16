@@ -57,15 +57,17 @@ TARGETS	= \
 	px4iov3_bl \
 	tapv1_bl \
 	tapv2_bl \
-	tapv3_bl \
 	gimbal_cgo3_plus
 
-all:	$(TARGETS)
+COLOER_ECHO	=\033[42;30m
+COLOER_ECHO_END	=\033[42;30m
 
+all:	$(TARGETS)
+	@echo -e "$(COLOER_ECHO)Note: For tapv3_bl should use: make clean tapv3_bl$(COLOER_ECHO_END)" 
 
 clean:
 	cd libopencm3 && make --no-print-directory clean && cd ..
-	rm -f *.elf *.bin
+	rm -f *.elf *.bin	
 
 #
 # Specific bootloader targets.
@@ -120,10 +122,11 @@ tapv1_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
 tapv2_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
 	make -f Makefile.f4 TARGET_HW=TAP_V2 LINKER_FILE=stm32f4.ld TARGET_FILE_NAME=$@
 
-tapv3_bl:$(MAKEFILE_LIST) $(LIBOPENCM3)
-	make -f Makefile.f7 TARGET_HW=TAP_V3 LINKER_FILE=stm32f7.ld TARGET_FILE_NAME=$@
+tapv3_bl: export EXTRAFLAGS=-DSTM32F4_COMPAT_F7
+tapv3_bl: $(MAKEFILE_LIST) $(LIBOPENCM3) 
+	make -f Makefile.f7 TARGET_HW=TAP_V3 LINKER_FILE=stm32f7.ld TARGET_FILE_NAME=$@ 
 
-gimbal_cgo3_plus: $(MAKEFILE_LIST) $(LIBOPENCM3)
+gimbal_cgo3_plus: $(MAKEFILE_LIST) $(LIBOPENCM3) 
 	make -f Makefile.f3 TARGET_HW=GIMBAL_CGO3_PLUS LINKER_FILE=stm32f3-20kib.ld TARGET_FILE_NAME=$@
 
 aerofcv1_bl: $(MAKEFILE_LIST) $(LIBOPENCM3)
@@ -141,7 +144,7 @@ deploy:
 #
 
 $(LIBOPENCM3): checksubmodules
-	make -C $(LIBOPENCM3) lib
+	make -C $(LIBOPENCM3) lib 
 
 .PHONY: checksubmodules
 checksubmodules: updatesubmodules
