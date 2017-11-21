@@ -715,6 +715,12 @@
   * # define BOARD_FORCE_BL_PULL            GPIO_PUPD_PULLUP
  */
 
+# define BOARD_POWER_PIN_OUT            GPIO5
+# define BOARD_POWER_PORT               GPIOC
+# define BOARD_POWER_CLOCK_REGISTER     RCC_AHB1ENR
+# define BOARD_POWER_CLOCK_BIT          RCC_AHB1ENR_IOPCEN
+# define BOARD_POWER_ON                 gpio_set
+# define BOARD_POWER_OFF                gpio_clear
  # define USBMFGSTRING                   "The Autopilot"
 
 # define SERIAL_BREAK_DETECT_DISABLED   1
