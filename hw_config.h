@@ -668,6 +668,7 @@
  # define BOOTLOADER_DELAY               5000
  # define INTERFACE_USB                  1
  # define INTERFACE_USART                1
+ # define OVERRIDE_USART_BAUDRATE        500000
  # define USBDEVICESTRING                "PX4 BL TAP v3.x"
  # define USBPRODUCTID                   0x0060 // TODO: this need revision
  # define BOOT_DELAY_ADDRESS             0x000001a0
