@@ -156,6 +156,18 @@ void check_enable_flash_read_protection(void)
 }
 #endif
 
+#if defined(ENABLE_BOR)
+void check_enable_flash_BOR(void)
+{
+	uint32_t optcr = FLASH_OPTCR;
+	if (optcr & FLASH_OPTCR_BOR_OFF) {
+		optcr &= ~FLASH_OPTCR_BOR_OFF;
+		flash_program_option_bytes(optcr);
+	}
+	
+}
+#endif
+
 static void board_init(void);
 
 #define BOOT_RTC_SIGNATURE          0xb007b007
@@ -337,7 +349,7 @@ board_power_init(void)
 	gpio_mode_setup(BOARD_POWER_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BOARD_POWER_PIN_OUT);
 	gpio_set_output_options(BOARD_POWER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, BOARD_POWER_PIN_OUT);
 	BOARD_POWER_ON(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
-
+	
 	/* enable the power controller clock */
 	rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_PWREN);
 
@@ -722,6 +734,10 @@ main(void)
 
 #if defined(ENABLE_ENCRYPTION)
 	check_enable_flash_read_protection();
+#endif
+
+#if defined(ENABLE_BOR)
+	check_enable_flash_BOR();
 #endif
 
 #if defined(BOARD_POWER_PIN_OUT) && !defined(HAS_DIRECT_POWER_CTRL)

@@ -726,6 +726,7 @@
 # define SERIAL_BREAK_DETECT_DISABLED   1
 # undef USE_VBUS_PULL_DOWN
 # undef HAS_DIRECT_POWER_CTRL
+# define ENABLE_BOR                     1 
 
 /****************************************************************************
  * TARGET_HW_CRAZYFLIE
