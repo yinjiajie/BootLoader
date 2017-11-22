@@ -348,7 +348,8 @@ board_power_init(void)
 	rcc_peripheral_enable_clock(&BOARD_POWER_CLOCK_REGISTER, BOARD_POWER_CLOCK_BIT);
 	gpio_mode_setup(BOARD_POWER_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, BOARD_POWER_PIN_OUT);
 	gpio_set_output_options(BOARD_POWER_PORT, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, BOARD_POWER_PIN_OUT);
-	BOARD_POWER_ON(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
+	/*Turn off power pin temporarily*/
+	BOARD_POWER_OFF(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
 	
 	/* enable the power controller clock */
 	rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_PWREN);
@@ -856,6 +857,9 @@ main(void)
 	}
 
 #endif
+
+	/*Before boot/upgrade, Enable power pin. If we enbale it at the beginning, may cause shutdown fault */
+	BOARD_POWER_ON(BOARD_POWER_PORT, BOARD_POWER_PIN_OUT);
 
 	/* Try to boot the app if we think we should just go straight there */
 	if (try_boot) {
