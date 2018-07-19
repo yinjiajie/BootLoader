@@ -628,6 +628,13 @@
 # define APP_RESERVATION_SIZE			(2 * 16 * 1024) /* 2 16 Kib Sectors */
 # define OSC_FREQ                       16
 
+//# define BOARD_TYPE                     66
+//# define BOARD_FLASH_SECTORS            11
+//# define BOARD_FLASH_SIZE               (1024 * 1024)
+//# define BOARD_FIRST_FLASH_SECTOR_TO_ERASE  2
+//# define APP_RESERVATION_SIZE			(2 * 16 * 1024) /* 2 16 Kib Sectors */
+//# define OSC_FREQ                       16
+
 # define BOARD_USART  					USART2
 # define BOARD_USART_CLOCK_REGISTER 	RCC_APB1ENR
 # define BOARD_USART_CLOCK_BIT      	RCC_APB1ENR_USART2EN
